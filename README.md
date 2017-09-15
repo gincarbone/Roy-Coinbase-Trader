@@ -6,7 +6,7 @@ The bot uses algorithms and financial metrics to automatically execute buying an
 Roy can activate a webserver on the machine where it is run. Going to http: //localhost/index.html displays a chart with price variations, the RSI index, the MACD index, and the signals intercepted by the SW.
 For security reasons, at this time the operation is limited to a simulation. The BUY and SELL functions are present, but LOCAL_BUY and LOCAL_SELL are used to perform non-real money.
 ## Financial Metrics Used
-The implemented financial part allows you to evaluate currency price variations and predict bull or bear trends through the combined use of MACD and RSI financial indicators.
+The implemented financial part allows you to evaluate currency price variations and predict bull or bear trends through the combined use of <b>MACD</b> and <b>RSI</b> financial indicators.
 ## Trading Strategies
 The operating mode of the algorithm is to detect price signals through the use of moving averages. In particular, the signals are combined while waiting for the same sign according to the algorithm of the financial analysis below:
 http://www.noafx.com/5_4-RSI-MACD-combined.php
