@@ -27,7 +27,10 @@ Charts
 ## Offer me an Italian Coffee
 these are the digital addresses to make a small offer and support the project. Thank you. 
 
-BTC = 17fYA4hB6BDikGSqcyYjC3dCnU56bjeN2J 
-ETH = 0xdc66Bbf32580d358e3eC021A20B51a09AFeB993e
+BTC = 17fYA4hB6BDikGSqcyYjC3dCnU56bjeN2J  
+
+ETH = 0xdc66Bbf32580d358e3eC021A20B51a09AFeB993e  
+
 LTC = LgzpfTNJjjmqP2mcpkJNYeR4HYupU4BFTP
+
 
