@@ -22,7 +22,7 @@ Prerequisites and libraries:
 
 pip install -r requirements.txt
 
-git clone https://github.com/jkbr/httpie.git
+git clone https://github.com/gincarbone/roy
 
 sudo python setup.py install
 
