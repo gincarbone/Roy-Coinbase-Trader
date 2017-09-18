@@ -3,7 +3,8 @@ import json
 import sys, getopt
 import datetime
 from botindicators import BotIndicators
-from cfg import period, pair, lengthOfMA, strategy, market_fees, min_profit_margin, webserver, graphical
+from cfg import period, pair, lengthOfMA, strategy, market_fees, min_profit_margin, webserver, graphical, buy_limit, buy_sell_amount, ignore_signals_after
+from cfg import RSI_top_lim, RSI_down_lim
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -34,18 +35,21 @@ class RoyTrader():
 	client = Client(api_key, api_secret)
 	user = client.get_current_user()
 	account = client.get_accounts()
+	#tbuys = client.get_buys()
 	buys = []
 	sells = []
 	prices = []
 	signals = []
 	args = []
 	fibo = BotIndicators()
+	buy_count = 0
 
 	#print(account)
+
 	
 	print ('Trading As:         %s (%s)' % (user['name'], user['email']))
-	#print ('Starting Balance:   $%s (%s BTC @ $%s/BTC)' % (balance['EUR'], balance['BTC'], get_price()))
-
+	#print ('Starting Balance:   $%s (%s BTC @ $%s/BTC)' % (balance['EUR'], balance['BTC'], self.get_price()))
+	print (account)
 	def __init__(self, api_key, api_secret):
 		#coinbase
 		#poloniex
@@ -75,6 +79,9 @@ class RoyTrader():
 		
 		idloop = 0
 
+		#self.sync_buys_sells_operations()
+
+
 		while True:
 			try:
 				if idloop < lengthOfMA:
@@ -82,8 +89,8 @@ class RoyTrader():
 
 				if strategy == "classic": 
 					self.classic_strategy()
-				elif strategy == "MACD":
-					self.MACD_Strategy(idloop)
+				elif strategy == "combined":
+					self.MACD_RSI_Strategy(idloop)
 				time.sleep(int(period))
 
 			except KeyboardInterrupt:
@@ -92,16 +99,17 @@ class RoyTrader():
 					WebServer.stop_Webserver()
 				sys.exit()
 
-	def MACD_Strategy(self, idloop):
+	def MACD_RSI_Strategy(self, idloop):
 		vectorEMAS_AMAF_MACD = []
 		MACD = 0
 		MACD_point = 0
 
 		RSI_point = 0
 
-		lastprice = self.get_price(pair)
-		buyprice = self.get_buy_price()
-		sellprice = self.get_sell_price()
+		#lastprice = self.get_price(pair)
+		lastprice = self.get_sell_price(pair) # use sell price instead of spot_price for more precise value
+		buyprice = self.get_buy_price(pair)
+		sellprice = self.get_sell_price(pair)
 
 		currentMovingAverage = 0
 		previousPrice = 0
@@ -130,13 +138,13 @@ class RoyTrader():
 		
 			MACD = vectorEMAS_AMAF_MACD[2]
 
-			MACD_point = MACD[0]
+			MACD_point = MACD[-1]
 			
 		RSI = self.fibo.rsiFunc(self.prices)	
 
-		RSI_point = RSI[0] 
+		RSI_point = RSI[-1] 
 
-		print (idloop," Date: ",str(dataDate)," Period: ",str(period),"  coppia: ",str(pair)," Price: ",str(lastprice)," BUY: ", buyprice, "SELL: ", sellprice ," EMA: ",str(currentMovingAverage)," MACD: ",str(MACD_point), " RSI: ", RSI_point)
+		print ("Date: ",str(dataDate),"  Pair: ",str(pair)," Price: ",str(lastprice)," BUY: ", buyprice, "SELL: ", sellprice ," EMA: ",str(currentMovingAverage)," MACD: ",str(MACD_point), " RSI: ", RSI_point)
 
 		if len(self.args) > 27:
 			
@@ -149,12 +157,14 @@ class RoyTrader():
 			self.prices.pop(0)
 			self.args.pop(0)
 
-		if len(self.signals) > 0: 
-			#print("data first signal:", self.signals[0][0])
-			#print("data first args:", self.args[0][0])
-			if self.signals[0][0] < self.args[0][0]:
+		#if len(self.signals) > int(ignore_signals_after): 
+				#self.signals.pop(0)
+				#print("************************** SIGNALS POPPED *******************************" )
+
+		if len(self.signals) > 0 and len(self.args) > ignore_signals_after and self.signals[0][0] < self.args[-(ignore_signals_after)][0]: 
 				self.signals.pop(0)
 				print("************************** SIGNALS POPPED *******************************" )
+
 
 
 	@property
@@ -168,25 +178,38 @@ class RoyTrader():
 			account['native_balance']['currency']: float(account['native_balance']['amount']),
 		}
 
+	@property
+	def account(self):
+		return [acct for acct in self.client.get_accounts()['data'] if acct['balance']['currency'] == 'BTC'][0]
+
+	@property
+	def balance(self):
+		return {
+			self.account['balance']['currency']:        float(self.account['balance']['amount']),
+			self.account['native_balance']['currency']: float(self.account['native_balance']['amount']),
+		}
+
 	def get_price(self,pair):
 		return float(self.client.get_spot_price(currency_pairo =pair)['amount'])
 
 	def get_price_LTC(self):
-		print (self.client.get_spot_price(currency_pair =pair))
+		print (self.client.get_spot_price(currency_pair = pair))
 
-	def get_buy_price(self):
-		return float(self.client.get_buy_price(currency_pair =pair)['amount'])
+	def get_buy_price(self, pair):
+		return float(self.client.get_buy_price(currency_pair = pair)['amount'])
 
-	def get_sell_price(self):
-		return float(self.client.get_sell_price(currency_pair =pair)['amount'])
+	def get_sell_price(self, pair):
+		return float(self.client.get_sell_price(currency_pair = pair)['amount'])
 
 	def buy(self, amount):
 		buy_obj = self.account.buy(amount, 'EUR')
 		self.buys.append(buy_obj)
+		self.increment_buy_count()
 
 	def sell(self, amount):
 		sell_obj = self.account.sell(amount, 'EUR')
 		self.sells.append(sell_obj)
+		self.decrement_buy_count()
 
 	def localbuy(self, amount, price):
 		buy_obj = json.dumps({'date': str(datetime.datetime.now()),'amount': amount, 'price': price})
@@ -194,6 +217,10 @@ class RoyTrader():
 		with open("www/report.csv", "a") as myfile:
 			myfile.write("BUY," + str(datetime.datetime.now()) +","+str(amount)+","+str(price)+","+str(price*amount)+"\n")
 			myfile.close()
+		with open("www/index.html", "a") as htmlreport:
+			htmlreport.write("<br> BUY Operation at: " + str(datetime.datetime.now()) +" <b>amount:</b> "+str(amount)+" <b> buy price:</b>"+str(price)+"  <b>total:</b> "+str(price*amount)+"\n")
+			htmlreport.close()
+
 
 	def localsell(self, amount, price):
 		sell_obj = json.dumps({'date': str(datetime.datetime.now()), 'amount': amount, 'price': price})
@@ -201,6 +228,28 @@ class RoyTrader():
 		with open("www/report.csv", "a") as myfile:
 			myfile.write("SELL," + str(datetime.datetime.now()) +","+str(amount)+","+str(price)+","+str(price*amount)+"\n")
 			myfile.close()
+		with open("www/index.html", "a") as htmlreport:
+			htmlreport.write("<br> SELL Operation at: " + str(datetime.datetime.now()) +" <b>amount:</b> "+str(amount)+" <b> sell price:</b>"+str(price)+"  <b>total:</b> "+str(price*amount)+"\n")
+			htmlreport.close()
+
+	def sync_buys_sells_operations(self):
+		json_buys = self.client.get_buys()
+		print(json_buys)
+		'''
+		for idx, gdax_buy in enumerate(self.buys):
+			resp = json.loads(buy)
+			if percent((float(sellprice)-(float(resp['price'])-float(market_fees)),buyprice)) > 0:
+				print("GAIN %:", float(sellprice)-(float(buyprice)-float(market_fees)))
+				return True
+			else:
+				return False
+		'''
+
+
+	def get_buy_count(self):
+		global buy_count
+		buy_count = len(self.buys)
+		return buy_count
 
 	def bytedate2num(self, fmt):
 		def converter(b):
@@ -221,51 +270,66 @@ class RoyTrader():
 		prices = [x[1] for x in args] 
 		buyprices = [x[2] for x in args]
 		sellprices = [x[3] for x in args]
+
+		dataDate = datetime.datetime.now().strftime('%H:%M:%S')
 		
 		lastprice = prices[-1]
 		buyprice = buyprices[1]
 		sellprice = sellprices[-1]
-
+		#TODO controllare i signals del periodo predecedente 
+		#TODO vendere anche senza nessun signal se il prezzo raggiunge il target
 		if MACD[-1] > 0 and MACD[-2] < 0 and MACD[-3] < 0 and MACD[-4] < 0:
 			self.signals.append([date[-1],float(lastprice),"buy", "MACD"])
-			print(str(date[-1]) + " *** MACD *** BUY SIGNAL INTERCEPTED @ " + str(lastprice))
+			print("Date: " + str(dataDate) + " *** MACD *** BUY SIGNAL INTERCEPTED @ " + str(buyprice))
 
 		if MACD[-1] < 0 and MACD[-2] > 0 and MACD[-3] > 0 and MACD[-4] > 0:
 			self.signals.append([date[-1],float(lastprice),"sell", "MACD"])
-			print(str(date[-1]) + " *** MACD *** SELL SIGNAL INTERCEPTED @ " + str(lastprice)) 
+			print("Date: " + str(dataDate) + " *** MACD *** SELL SIGNAL INTERCEPTED @ " + str(sellprice)) 
 
-
-		if RSI[-1] < 20 and RSI[-2] > 20 and RSI[-3] > 20 and RSI[-4] > 20:
+		if RSI[-1] < RSI_down_lim and RSI[-2] > RSI_down_lim and RSI[-3] > RSI_down_lim and RSI[-4] > RSI_down_lim:
 			self.signals.append([date[-1],float(lastprice),"buy", "RSI"])
-			print(str(date[-1]) + " *** RSI *** BUY SIGNAL INTERCEPTED @ " + str(lastprice))
-		elif RSI[-1] > 80 and RSI[-2] < 80 and RSI[-3] < 80 and RSI[-4] < 80:
+			print("Date: " + str(dataDate) + " *** RSI *** BUY SIGNAL INTERCEPTED @ " + str(buyprice))
+		elif RSI[-1] > RSI_top_lim and RSI[-2] < RSI_top_lim and RSI[-3] < RSI_top_lim and RSI[-4] < RSI_top_lim:
 			self.signals.append([date[-1],float(lastprice),"sell", "RSI"])
-			print(str(date[-1]) + " *** RSI *** SELL SIGNAL INTERCEPTED @ " + str(lastprice))
+			print("Date: " + str(dataDate) + " *** RSI *** SELL SIGNAL INTERCEPTED @ " + str(sellprice))
 
+		if len(self.signals) > 1:
+			# if we have 2 according signals of buy 
+			if self.signals[-1][2] == "buy" and self.signals[-2][2] == "buy":
+				#and if the 2 signals according for MACD and RSI
+				if self.signals [-1][3] == "RSI" and self.signals [-2][3] == "MACD":
+					if self.get_buy_count() < buy_limit: 
+						self.localbuy(buy_sell_amount,buyprice)
+				elif self.signals [-1][3] == "MACD" and self.signals [-2][3] == "RSI":
+					if self.get_buy_count() < buy_limit:
+						self.localbuy(buy_sell_amount,buyprice)
+			# if we have 2 according signals of sell 
+			elif self.signals[-1][2] == "sell" and self.signals[-2][2] == "sell":
+				#and if the 2 signals give the same result from MACD and RSI
+				if self.signals [-1][3] == "RSI" and self.signals [-2][3] == "MACD":
+					#check if we are rich :) 
+					if self.gainCheck(sellprice):
+						self.localsell(buy_sell_amount,sellprice)
+					else: 
+						print("SELL double signal, BUT gain is not good")
+				elif self.signals [-1][3] == "MACD" and self.signals [-2][3] == "RSI":
+					#check if we are rich :) 
+					if self.gainCheck(sellprice):
+						self.localsell(buy_sell_amount,sellprice)
+			# only 1 signal but hard conditions 
+			elif self.signals[-1][2] == "buy" and self.signals [-1][3] == "MACD" and (RSI[-1] <= RSI_down_lim):
+				if self.get_buy_count() < buy_limit: 
+					self.localbuy(buy_sell_amount,buyprice)  
+				else:
+					print("Date: " + str(dataDate) + " BUY limit reached")
+			elif self.signals[-1][2] == "buy" and self.signals [-1][3] == "RSI" and (MACD[-1] > 0):
+				if self.get_buy_count() < buy_limit: 
+					self.localbuy(buy_sell_amount,buyprice) 
+				else:
+					print("BUY limit reached")
 
-		buycountsRSI = 0
-		buycountsMACD = 0
-		sellcountsRSI = 0
-		sellcountsMACD = 0
-
-		for idx, sign in enumerate(self.signals):
-			
-			if sign[2] == "buy":
-				if sign[3] == "RSI":
-					buycountsRSI = buycountsRSI + 1
-				if sign[3] == "MACD":
-					buycountsMACD == buycountsMACD + 1
-			if sign[2] == "sell":
-				if sign[3] == "RSI":
-					buycountsRSI = sellcountsRSI + 1
-				if sign[3] == "MACD":
-					buycountsMACD == sellcountsMACD + 1
-
-			if buycountsMACD + buycountsRSI ==2: 
-				self.localbuy(2,buyprice)
-
-			if sellcountsMACD + sellcountsRSI == 2 and gainCheck(sellprice):
-				self.localsell(2,sellprice)
+			else:
+				print("Date: " + str(dataDate) + " BUY signal and SELL signal discording. HOLD POSITION... ")
 
 	def percent(self, part, whole):
 		return 100 * float(part)/float(whole)
@@ -277,7 +341,6 @@ class RoyTrader():
 
 		for idx, buy in enumerate(self.buys):
 			resp = json.loads(buy)
-		
 			if percent((float(sellprice)-(float(resp['price'])-float(market_fees)),buyprice)) > 0:
 				print("GAIN %:", float(sellprice)-(float(buyprice)-float(market_fees)))
 				return True
