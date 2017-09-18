@@ -11,6 +11,7 @@ import matplotlib
 import pylab
 import pandas as pd 
 from datetime import datetime as dt
+from cfg import RSI_top_lim, RSI_down_lim
 
 #matplotlib.rcParams.update({'font.size': 9})
 
@@ -23,7 +24,7 @@ class BotIndicators(object):
 	fig = plt.figure()
 
 	if graphical:
-		fig.set_size_inches(10, 7)
+		fig.set_size_inches(11, 7)
 
 		ax1 = plt.subplot2grid((6,1), (0,0), rowspan=1, colspan=1)	#MACD
 		ax = plt.subplot2grid((6,1), (1,0), rowspan=4, colspan=1) 	#prices
@@ -57,7 +58,7 @@ class BotIndicators(object):
 		ax1.set_ylabel('MACD')
 
 		#grids RSI
-		ax2.grid(True, linestyle=':', linewidth='0.5', color='black')
+		#ax2.grid(True, linestyle=':', linewidth='0.5', color='black')
 		ax2.xaxis.set_major_locator(mticker.MaxNLocator(lengthOfMA))
 		ax2.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
 		ax2.yaxis.label.set_color("k")
@@ -248,100 +249,92 @@ class BotIndicators(object):
 		openp = [x[5] for x in stock] #previousPric
 		sellprice = [x[3] for x in stock]
 		volume = [x[5] for x in stock] 
-		
-		
-		#print("RSI ùùùùùùùùùùùùùùùùùùùùùùùù ", RSI)
-		#print("MACD ùùùùùùùùùùùùùùùùùùùùùùùù ", MACD)
-		#print("emaslow ùùùùùùùùùùùùùùùùùùùùùùùù ", emaslow)
-		#print("prices ùùùùùùùùùùùùùùùùùùùùùùùù ", closep)
-
-		#print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAMACD",len(MACD))
-
 
 		#datetime.datetime.now(),lastprice,buyprice,sellprice,previousPrice,volume k=2,emaSlow, emaFast, MACD, RSI 
 		try:
 			# PRICES
 			self.ax.clear()
 
-			self.ax.grid(which='major', linestyle=':', linewidth='0.65', color='black')
-			self.ax.grid(which='minor', linestyle=':', linewidth='0.5', color='black')
+			self.ax.grid(True, which='major', linestyle=':', linewidth='0.65', color='black')
+			self.ax.grid(True, which='minor', linestyle=':', linewidth='0.5', color='black')
 			xs = matplotlib.dates.date2num(date)
 			hfmt = matplotlib.dates.DateFormatter('%H:%M:%S')
 			self.ax.xaxis.set_major_formatter(hfmt)
+			self.ax.relim(visible_only=True)
+			self.ax.autoscale_view(True,True,True)
 			self.ax.plot(xs, closep, linewidth=1.5)
+			#self.ax.fill_between(xs, (closep - closep*30/100), closep, where=closep >= (closep - closep*30/100), facecolor='grey', alpha=0.5, interpolate=True)
+
 
 			#EMASLOW EMAFAST
 			self.ax1.clear()
 			self.ax1.grid(which='major', linestyle=':', linewidth='0.65', color='black')
 			self.ax1.grid(which='minor', linestyle=':', linewidth='0.5', color='black')
 			self.ax1.xaxis.set_major_formatter(hfmt)
-			self.ax1.relim()
+			self.ax1.relim(visible_only=True)
 			self.ax1.autoscale_view(True,True,True)
-			#print("EmaSlow:", emaslow)
-			#print("EmaFast:", emafast)
 
-			self.ax1.plot(xs,emaslow, 'r-', linewidth=1.4)
-			self.ax1.plot(xs,emafast, 'g-', linewidth=1.4)
-			#plt.ylabel('MACD')
+			self.ax1.plot(xs,emaslow, 'r-', linewidth=1.4, label='EMA Slow')
+			self.ax1.plot(xs,emafast, 'k-', linewidth=1.4, label='EMA Fast')
 			self.ax1.set_ylabel('MACD')
 
 			# PLOT RSI
 			self.ax2.clear()
-			self.ax2.grid(which='major', linestyle=':', linewidth='0.65', color='black')
-			self.ax2.grid(which='minor', linestyle=':', linewidth='0.5', color='black')
+			self.ax2.grid(True, which='major', linestyle=':', linewidth='0.65', color='black')
+			self.ax2.grid(True, which='minor', linestyle=':', linewidth='0.5', color='black')
 			rsiCol = '#c1f9f7'
 			posCol = '#386d13'
 			negCol = '#8f2020'
-			self.ax2.axhline(80, color=negCol, linewidth=1.0, linestyle='--')
-			self.ax2.axhline(20, color=posCol, linewidth=1.0, linestyle='--')
-			self.ax2.set_yticks([20,80])
+			self.ax2.axhline(RSI_top_lim, color=negCol, linewidth=1.0, linestyle='--')
+			self.ax2.axhline(RSI_down_lim, color=posCol, linewidth=1.0, linestyle='--')
+			self.ax2.set_yticks([RSI_down_lim,RSI_top_lim])
 			#set min and max for function RSI
 			self.ax2.set_ylim([0,100])
 			self.ax2.xaxis.set_major_formatter(hfmt)
+			self.ax2.relim(visible_only=True)
+			self.ax2.autoscale_view(True,True,True)
 
 			#xs = matplotlib.dates.date2num(date)
-			self.ax2.plot(xs,RSI, 'c-', linewidth=1.6, color='green')
-			self.ax2.fill_between(xs, RSI, 80, where=(RSI>=80), facecolor=negCol, edgecolor=negCol, alpha=0.5, interpolate=True)
-			self.ax2.fill_between(xs, RSI, 20, where=(RSI<=20), facecolor=posCol, edgecolor=posCol, alpha=0.5, interpolate=True)
+			self.ax2.plot(xs,RSI, 'c-', linewidth=1.6, color='green', label='RSI')
+			self.ax2.fill_between(xs, RSI, RSI_top_lim, where=(RSI>=RSI_top_lim), facecolor=negCol, edgecolor=negCol, alpha=0.5, interpolate=True)
+			self.ax2.fill_between(xs, RSI, RSI_down_lim, where=(RSI<=RSI_down_lim), facecolor=posCol, edgecolor=posCol, alpha=0.5, interpolate=True)
 
 			# RSI Label on the chart
 			self.ax2.set_ylabel('RSI')
-			#fill between max value and thresold
-			#self.ax2.fill_between(RSI, 80, where=(RSI>=80), facecolor=negCol, edgecolor=negCol, alpha=0.5)
-			#self.ax2.fill_between(RSI, 20, where=(RSI<=20), facecolor=posCol, edgecolor=posCol, alpha=0.5)
+
+			self.ax1.legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.)
+			self.ax2.legend(bbox_to_anchor=(1, 1), loc=3, borderaxespad=0.)
 			
 			for idx, a in enumerate (signals):
 				xss = matplotlib.dates.date2num(a[0])
-				#l = plt.axvline(x=xss, label='BUY!')
-				#ax.axvline(x=xss, label='BUY!', linewidth=2.0, linestyle='--', color='red')
-				#ax1.axvline(x=xss, label='BUY!', linewidth=2.0, linestyle='--', color='red')
-				#ax2.axvline(x=xss, label='BUY!', linewidth=2.0, linestyle='--', color='red')
-				'''
-				self.ax.annotate(a[2],(xss,a[1]),
-							xytext=(0.8, 0.9), textcoords='axes fraction',
-							arrowprops=dict(facecolor='white', shrink=0.05),
-							fontsize=14, color = 'g',
-							horizontalalignment='right', verticalalignment='bottom')
-				'''
-
-				#self.ax.annotate(a[2],(xss,a[1]),
-				#			xytext=(0.8, 0.9), textcoords='axes fraction',
-				#			arrowprops=dict(facecolor='white', shrink=0.05),
-				#			fontsize=14, color = 'g',
-				#			horizontalalignment='right', verticalalignment='bottom')
 
 				if a[3] == "MACD": 
 					#l = plt.axvline(x=xss, label=a[2], linewidth=2.0, linestyle='--', color='red')
-					self.ax.axvline(x=xss, label=a[2], linewidth=2.0, linestyle='--', color='red')
-					self.ax1.axvline(x=xss, label=a[2], linewidth=2.0, linestyle='--', color='red')
+					if a[2] == "buy":
+						self.ax.axvline(x=xss, label=a[2], linewidth=1.6, linestyle='--', color='green')
+						self.ax1.axvline(x=xss, label=a[2], linewidth=1.6, linestyle='--', color='green')
+					elif a[2] == "sell":
+						self.ax.axvline(x=xss, label=a[2], linewidth=1.6, linestyle='--', color='red')
+						self.ax1.axvline(x=xss, label=a[2], linewidth=1.6, linestyle='--', color='red')
+
 				elif a[3] == "RSI":
-					#l = plt.axvline(x=xss, label=a[2], linewidth=2.0, linestyle='--', color='red')
-					self.ax.axvline(x=xss, label=a[2], linewidth=2.0, linestyle='--', color='green')
-					self.ax2.axvline(x=xss, label=a[2], linewidth=2.0, linestyle='--', color='green')
+					if a[2] == "buy":
+						self.ax.axvline(x=xss, label=a[2], linewidth=1.6, linestyle='--', color='green')
+						self.ax2.axvline(x=xss, label=a[2], linewidth=1.6, linestyle='--', color='green')
+					elif a[2] == "sell":
+						self.ax.axvline(x=xss, label=a[2], linewidth=1.6, linestyle='--', color='red')
+						self.ax2.axvline(x=xss, label=a[2], linewidth=1.6, linestyle='--', color='red')
 
-					# draw a default vline at x=1 that spans the yrang
+				#bbox_props = dict(boxstyle="round4,pad=0.3,rounding_size=None", fc="cyan", ec="b", lw=2)
+				#self.ax.text(xss, 0, a[3] + " " + a[2], ha="center", va="center", rotation=45, size=15, bbox=bbox_props)
+				plt.text(1.15, 0.7 - float(0.2*idx),"Signal: " + a[3] + " " + a[2], horizontalalignment='right', verticalalignment='center', transform = self.ax.transAxes, fontsize=6) 
 
 
+	
+
+			plt.text(1.15, 0.8,"Last Price: "+str(closep[-1]), horizontalalignment='right', verticalalignment='center', transform = self.ax.transAxes, fontsize=8, color='grey') 
+
+			plt.subplots_adjust(right=0.85)
 			plt.draw()
 		#plt.show()
 			plt.savefig("www/operatorio.png")
