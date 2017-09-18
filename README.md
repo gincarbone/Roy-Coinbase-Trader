@@ -19,10 +19,8 @@ Some parts of the code are not written in an elegant manner and certainly need i
 - telegram notifications of signals and operations
 ## Installation
 Prerequisites and libraries: 
-
-pip install -r requirements.txt
-
 git clone https://github.com/gincarbone/roy
+pip install -r requirements.txt
 
 ## Screens
 <img align="center" width="600" height="300" src="http://www.marcelloincarbone.it/wp-content/uploads/2017/09/Console1.jpg">
