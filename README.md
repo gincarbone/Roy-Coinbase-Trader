@@ -19,7 +19,9 @@ Some parts of the code are not written in an elegant manner and certainly need i
 - telegram notifications of signals and operations
 ## Installation
 Prerequisites and libraries: 
+
 git clone https://github.com/gincarbone/roy
+
 pip install -r requirements.txt
 
 ## Screens
