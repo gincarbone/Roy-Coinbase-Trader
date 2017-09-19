@@ -11,7 +11,7 @@ import matplotlib
 import pylab
 import pandas as pd 
 from datetime import datetime as dt
-from cfg import RSI_top_lim, RSI_down_lim
+from cfg import RSI_top_lim, RSI_down_lim, roy_version
 
 #matplotlib.rcParams.update({'font.size': 9})
 
@@ -25,13 +25,15 @@ class BotIndicators(object):
 
 	if graphical:
 		fig.set_size_inches(11, 7)
+		fig.suptitle('Roy Trader - Dashboard - v. ' + str(roy_version), fontsize=14, fontweight='bold')
 
 		ax1 = plt.subplot2grid((6,1), (0,0), rowspan=1, colspan=1)	#MACD
 		ax = plt.subplot2grid((6,1), (1,0), rowspan=4, colspan=1) 	#prices
 		ax2 = plt.subplot2grid((6,1), (5,0), rowspan=1, colspan=1)	#RSI
 
 		fig.subplots_adjust(hspace=0)
-		plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
+		#plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False) #TODO provare con ax, ax1
+		plt.title('Roy Trader - Dashboard - v. ' + str(roy_version))
 
 		#grids prices
 		ax.grid(True, linestyle=':', linewidth='0.5', color='black')
@@ -238,10 +240,10 @@ class BotIndicators(object):
 		plt.savefig("www/operatorio.png")
 
 
-	def plot3(self, stock, prices, signals, emaslow, emafast, MACD, RSI):
+	def plot3(self, stock, prices, signals, emaslow, emafast, MACD, RSI, transactions_plot):
 		
 
-		
+		xdate_t = ""
 		date = [x[0] for x in stock] #converters={ 0: mdates.strpdate2num('%Y%m%d')} 
 		closep = [x[1] for x in stock] #lastprice
 		highp = [x[2] for x in stock]
@@ -249,6 +251,14 @@ class BotIndicators(object):
 		openp = [x[5] for x in stock] #previousPric
 		sellprice = [x[3] for x in stock]
 		volume = [x[5] for x in stock] 
+
+		if len(transactions_plot) > 0:
+			xdate = [x[0] for x in transactions_plot]
+			price_t = [x[1] for x in transactions_plot]
+			trans_type = [x[2] for x in transactions_plot]
+
+			color= ['green' if l == "BUY" else 'red' for l in trans_type]
+			#plt.scatter(arr1, arr2, color=color)
 
 		#datetime.datetime.now(),lastprice,buyprice,sellprice,previousPrice,volume k=2,emaSlow, emaFast, MACD, RSI 
 		try:
@@ -264,8 +274,7 @@ class BotIndicators(object):
 			self.ax.autoscale_view(True,True,True)
 			self.ax.plot(xs, closep, linewidth=1.5)
 			#self.ax.fill_between(xs, (closep - closep*30/100), closep, where=closep >= (closep - closep*30/100), facecolor='grey', alpha=0.5, interpolate=True)
-
-
+			
 			#EMASLOW EMAFAST
 			self.ax1.clear()
 			self.ax1.grid(which='major', linestyle=':', linewidth='0.65', color='black')
@@ -277,6 +286,7 @@ class BotIndicators(object):
 			self.ax1.plot(xs,emaslow, 'r-', linewidth=1.4, label='EMA Slow')
 			self.ax1.plot(xs,emafast, 'k-', linewidth=1.4, label='EMA Fast')
 			self.ax1.set_ylabel('MACD')
+			self.ax1.legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.)
 
 			# PLOT RSI
 			self.ax2.clear()
@@ -302,8 +312,8 @@ class BotIndicators(object):
 			# RSI Label on the chart
 			self.ax2.set_ylabel('RSI')
 
-			self.ax1.legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.)
-			self.ax2.legend(bbox_to_anchor=(1, 1), loc=3, borderaxespad=0.)
+			#self.ax1.legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.)
+			self.ax2.legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.)
 			
 			for idx, a in enumerate (signals):
 				xss = matplotlib.dates.date2num(a[0])
@@ -327,21 +337,24 @@ class BotIndicators(object):
 
 				#bbox_props = dict(boxstyle="round4,pad=0.3,rounding_size=None", fc="cyan", ec="b", lw=2)
 				#self.ax.text(xss, 0, a[3] + " " + a[2], ha="center", va="center", rotation=45, size=15, bbox=bbox_props)
-				plt.text(1.15, 0.7 - float(0.2*idx),"Signal: " + a[3] + " " + a[2], horizontalalignment='right', verticalalignment='center', transform = self.ax.transAxes, fontsize=6) 
+				plt.text(1.15, 0.8 - float(0.05*idx),"Signal: " + a[3] + " " + a[2], horizontalalignment='center', verticalalignment='center', transform = self.ax.transAxes, fontsize=6) 
 
 
-	
+			if len(transactions_plot) > 0:
+				#self.ax.plot(xdate, price_t, marker='o', markersize=3, color=color)
+				plt.scatter(xdate, price_t, s=15, c=color, alpha=0.5)
 
-			plt.text(1.15, 0.8,"Last Price: "+str(closep[-1]), horizontalalignment='right', verticalalignment='center', transform = self.ax.transAxes, fontsize=8, color='grey') 
+			plt.text(1.15, 0.9,"Last Price: "+str(closep[-1]), horizontalalignment='right', verticalalignment='center', transform = self.ax.transAxes, fontsize=8, color='grey') 
 
 			plt.subplots_adjust(right=0.85)
+			plt.setp(ax.get_xticklabels(), visible=False)
+			plt.setp(ax2.get_xticklabels(), visible=False)
 			plt.draw()
 		#plt.show()
 			plt.savefig("www/operatorio.png")
 		except ValueError:
 			print('Non-numeric data found in the file.')
 			pass
-
 
 
 	def plot_prices(self, prices):
@@ -387,3 +400,8 @@ class BotIndicators(object):
 		a[:window] = a[window]
 		return a
 
+
+
+
+
+ 		
