@@ -347,8 +347,8 @@ class BotIndicators(object):
 			plt.text(1.15, 0.9,"Last Price: "+str(closep[-1]), horizontalalignment='right', verticalalignment='center', transform = self.ax.transAxes, fontsize=8, color='grey') 
 
 			plt.subplots_adjust(right=0.85)
-			plt.setp(ax.get_xticklabels(), visible=False)
-			plt.setp(ax2.get_xticklabels(), visible=False)
+			plt.setp(self.ax.get_xticklabels(), visible=False)
+			plt.setp(self.ax2.get_xticklabels(), visible=False)
 			plt.draw()
 		#plt.show()
 			plt.savefig("www/operatorio.png")
