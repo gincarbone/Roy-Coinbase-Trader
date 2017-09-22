@@ -318,7 +318,7 @@ class BotIndicators(object):
 
 			#SIGNALS
 			#([date[-1],float(lastprice),"buy", "RSI"])
-			plt.text(1.12, 0.75,"Signals:", horizontalalignment='center', verticalalignment='center', transform = self.ax.transAxes, fontsize=8) 
+			plt.text(1.10, 0.75,"Signals:", horizontalalignment='center', verticalalignment='center', transform = self.ax.transAxes, fontsize=8) 
 
 			for idx, a in enumerate (signals):
 				xss = matplotlib.dates.date2num(a[0])
@@ -342,19 +342,19 @@ class BotIndicators(object):
 
 				#bbox_props = dict(boxstyle="round4,pad=0.3,rounding_size=None", fc="cyan", ec="b", lw=2)
 				#self.ax.text(xss, 0, a[3] + " " + a[2], ha="center", va="center", rotation=45, size=15, bbox=bbox_props)
-				plt.text(1.12, 0.70 - float(0.05*idx), str((a[0]).strftime("%Y-%m-%d %H:%M")) + " " + str(a[3]) + " " + str(a[2]), horizontalalignment='center', verticalalignment='center', transform = self.ax.transAxes, fontsize=6) 
+				plt.text(1.10, 0.70 - float(0.05*idx), str((a[0]).strftime("%Y-%m-%d %H:%M")) + " " + str(a[3]) + " " + str(a[2]), horizontalalignment='center', verticalalignment='center', transform = self.ax.transAxes, fontsize=6) 
 
 			#TRANSACTIONS
 			# [date, float(price), "BUY"]
-			plt.text(1.12, 0.35,"Positions:", horizontalalignment='center', verticalalignment='center', transform = self.ax.transAxes, fontsize=8) 
+			plt.text(1.10, 0.35,"Positions:", horizontalalignment='center', verticalalignment='center', transform = self.ax.transAxes, fontsize=8) 
 			for idx, a in enumerate (transactions_plot):
 				xdate = matplotlib.dates.date2num(a[0])
 				if a[2] == "BUY":
-					plt.text(1.12, 0.3 - float(0.05*idx), str((a[0]).strftime("%Y-%m-%d %H:%M")) + str(a[2]) + " at " + str(a[1]), horizontalalignment='center', verticalalignment='center', transform = self.ax.transAxes, fontsize=6, color='green') 
+					plt.text(1.10, 0.3 - float(0.05*idx), str((a[0]).strftime("%Y-%m-%d %H:%M")) + str(a[2]) + " at " + str(a[1]), horizontalalignment='center', verticalalignment='center', transform = self.ax.transAxes, fontsize=6, color='green') 
 				elif a[2] == "SELL":
-					plt.text(1.12, 0.3 - float(0.05*idx), str((a[0]).strftime("%Y-%m-%d %H:%M")) + str(a[2]) + " at " + str(a[1]), horizontalalignment='center', verticalalignment='center', transform = self.ax.transAxes, fontsize=6, color='red') 
+					plt.text(1.10, 0.3 - float(0.05*idx), str((a[0]).strftime("%Y-%m-%d %H:%M")) + str(a[2]) + " at " + str(a[1]), horizontalalignment='center', verticalalignment='center', transform = self.ax.transAxes, fontsize=6, color='red') 
 				
-			plt.text(1.12, 0.9, str(closep[-1]), horizontalalignment='center', verticalalignment='center', transform = self.ax.transAxes, fontsize=18) 
+			plt.text(1.10, 0.9, str(closep[-1]), horizontalalignment='center', verticalalignment='center', transform = self.ax.transAxes, fontsize=18) 
 			plt.subplots_adjust(right=0.85)
 
 			plt.draw()
@@ -408,3 +408,8 @@ class BotIndicators(object):
 		a[:window] = a[window]
 		return a
 
+
+
+
+
+ 		
