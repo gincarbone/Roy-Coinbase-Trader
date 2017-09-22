@@ -12,9 +12,10 @@ import matplotlib.animation as animation
 from matplotlib.dates import strpdate2num
 import numpy as np
 from coinbase.wallet.client import Client
-import WebServer as WebServer
+import WebServer
 
 from secrets import api_key, api_secret
+
 
 # TRADING BOT PYTHON 3 COMPLIANT AND OOB 
 # coinbase client.py need a bugfix
@@ -75,11 +76,19 @@ class RoyTrader():
 
 
 		if webserver:
-			WebServer.init_Webserver()
-			WebServer.start_Webserver()
+			try:
+				WebServer.initialize_web_server()
+			except Exception as e:
+				raise e
+			finally:
+				WebServer.stop_web_server()
+	
 		
 		idloop = 0
+
 		#self.sync_buys_sells_operations()
+
+
 		while True:
 			try:
 				if idloop < lengthOfMA:
@@ -94,7 +103,7 @@ class RoyTrader():
 			except KeyboardInterrupt:
 				print("Bye")
 				if webserver:
-					WebServer.stop_Webserver()
+					WebServer.stop_web_server()
 				sys.exit()
 
 	def MACD_RSI_Strategy(self, idloop):
@@ -229,7 +238,7 @@ class RoyTrader():
 	def localsell(self,date, amount, price):
 		sell_obj = json.dumps({'date': str(date), 'amount': amount, 'price': price})
 		self.sells.append(sell_obj)
-		self.transactions_plot.append([date, float(price), "BUY"]) 
+		self.transactions_plot.append([date, float(price), "SELL"]) 
 		with open("www/report.csv", "a") as myfile:
 			myfile.write("SELL,"+ str(date)+","+str(amount)+","+str(price)+","+str(price*amount)+"\n")
 			myfile.close()
@@ -293,12 +302,10 @@ class RoyTrader():
 			self.signals.append([date[-1],float(lastprice),"sell", "MACD"])
 			print("Date: " + str(dataDate) + " *** MACD *** SELL SIGNAL INTERCEPTED @ " + str(sellprice)) 
 
-		#if RSI[-1] < RSI_down_lim:
-		if RSI[-1] < 50:
+		if RSI[-1] < RSI_down_lim:
 			self.signals.append([date[-1],float(lastprice),"buy", "RSI"])
 			print("Date: " + str(dataDate) + " *** RSI *** BUY SIGNAL INTERCEPTED @ " + str(buyprice))
-		#elif RSI[-1] > RSI_top_lim:
-		elif RSI[-1] > 50:
+		elif RSI[-1] > RSI_top_lim:
 			self.signals.append([date[-1],float(lastprice),"sell", "RSI"])
 			print("Date: " + str(dataDate) + " *** RSI *** SELL SIGNAL INTERCEPTED @ " + str(sellprice))
 
