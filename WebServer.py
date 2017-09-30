@@ -1,32 +1,110 @@
-import http.server
-import socketserver
-import os
-from threading import Thread
-import sys, os, socket
-from socketserver import ThreadingMixIn
-from http.server import SimpleHTTPRequestHandler, HTTPServer
+# coding=utf-8
+import threading
+import subprocess
+import multiprocessing
+import time
 
-class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
-    pass
+#cmdkill = "kill $(ps aux|grep '<name of your thread> true'|grep -v 'grep'|awk '{print $2}') 2> /dev/null"
+cmdkill = "sudo kill $(ps aux|grep royws|grep -v 'grep'|awk '{print $2}') 2> ./tracestop.txt"
+server = None
+web_server_ip = "0.0.0.0"
+web_server_port = "80"
+web_server_template = "www"
 
-def init_Webserver():
-  PORT = 80
-  web_dir = os.path.join(os.path.dirname(__file__), 'www')
-  os.chdir(web_dir)
 
-  global httpd 
-  httpd = ThreadingSimpleServer(('0.0.0.0', PORT), SimpleHTTPRequestHandler)
-  print("**************************************")
-  print("* Web Server BOT Roy serving at port", PORT)
-  print("\n *   http://localhost/index.html")
+def initialize_web_server():
+    '''
+    Setup the web server, retrieving the configuration parameters
+    and starting the web server thread
+    '''
+    global web_server_ip, web_server_port, web_server_template
 
-def start_Webserver():
-  try:
-    #httpd.serve_forever()
-    sys.stdout.flush()
-    httpd.handle_request()
-  except KeyboardInterrupt:
-    httpd.shutdown()
+    # associate web server ip address
+    web_server_ip = '127.0.0.1'
+    web_server_port = '80'
 
-def stop_Webserver():
-  httpd.shutdown()
+    # Check for custom web server template
+    web_server_template = 'www'
+
+    print('Starting WebServer at {0} on port {1} with template {2}'
+          .format(web_server_ip, web_server_port, web_server_template))
+
+    #thread = threading.Thread(target=start_web_server, name='royws')
+    #thread.deamon = True
+    #thread.start()
+
+
+    thread = multiprocessing.Process(name='royws',target=start_web_server)
+    thread.daemon = True
+    thread.start()
+
+
+def start_web_server():
+    '''
+    Start the web server
+    '''
+    #import SimpleHTTPServer
+    import http.server
+    import socketserver
+    #import SocketServer
+    import socket
+
+    try:
+        port = int(web_server_port)
+        host = web_server_ip
+
+        # Do not attempt to fix code warnings in the below class, it is perfect.
+        #class QuietHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+        class QuietHandler(http.server.SimpleHTTPRequestHandler):
+            # quiet server logs
+            def log_message(self, format, *args):
+                return
+
+            # serve from www folder under current working dir
+            def translate_path(self, path):
+                #return SimpleHTTPServer.SimpleHTTPRequestHandler.translate_path(self, '/' + web_server_template + path)
+                return http.server.SimpleHTTPRequestHandler.translate_path(self, '/' + web_server_template + path)
+
+        global server
+        #SocketServer.TCPServer.allow_reuse_address = True
+        socketserver.TCPServer.allow_reuse_address = True
+
+        #server = SocketServer.TCPServer((host, port), QuietHandler)
+        server = socketserver.TCPServer((host, port), QuietHandler)
+
+        if host == "0.0.0.0":
+            # Get all addresses that we could listen on the port specified
+            addresses = [i[4][0] for i in socket.getaddrinfo(socket.gethostname().split('.')[0], port)]
+            addresses = [i for i in addresses if ':' not in i]  # Filter out all IPv6 addresses
+            addresses.append('127.0.0.1')  # getaddrinfo doesn't always get localhost
+            hosts = list(set(addresses))  # Make list unique
+        else:
+            hosts = [host]
+        serving_msg = "http://{0}:{1}/index.html".format(hosts[0], port)
+        for host in hosts[1:]:
+            serving_msg += ", http://{0}:{1}/index.html".format(host, port)
+        #print('Started WebServer, lendingbot status available at {0}'.format(serving_msg))
+        print(('Started WebServer, Roy Trader status available at {0}'.format(serving_msg)))
+        server.serve_forever()
+        time.sleep(5)
+    except Exception as ex:
+        print(('Failed to start WebServer: {0}'), ex)
+        #pass
+    finally: 
+        subprocess.Popen(cmdkill, stdout=subprocess.PIPE, shell=True)
+
+
+
+def stop_web_server():
+    '''
+    Stop the web server
+    '''
+    try:
+        print("Stopping WebServer")
+        threading.Thread(target=server.shutdown).start()
+    except Exception as ex:
+        #raise ex
+        #print("Failed to stop WebServer: {0}".format(ex.message))
+        print(('Failed to start WebServer: {0}'), ex)
+    finally: 
+        subprocess.Popen(cmdkill, stdout=subprocess.PIPE, shell=True)
