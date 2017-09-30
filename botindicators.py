@@ -36,7 +36,7 @@ class BotIndicators(object):
 		plt.title('Roy Trader - Dashboard - v. ' + str(roy_version))
 
 		#grids prices
-		ax.grid(True, linestyle=':', linewidth='0.5', color='black')
+		ax.grid(True, linestyle=':', linewidth='0.5', color='black') 
 		ax.xaxis.set_major_locator(mticker.MaxNLocator(lengthOfMA))
 		ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
 		ax.yaxis.label.set_color("g")
