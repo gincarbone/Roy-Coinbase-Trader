@@ -14,7 +14,7 @@ import numpy as np
 from coinbase.wallet.client import Client
 import WebServer
 
-from secrets import api_key, api_secret
+from cfg import api_key, api_secret
 
 
 # TRADING BOT PYTHON 3 COMPLIANT AND OOB 
