@@ -3,6 +3,7 @@ chardet
 coinbase
 defer
 html5lib
+ifaddr
 louis
 lxml
 matplotlib
