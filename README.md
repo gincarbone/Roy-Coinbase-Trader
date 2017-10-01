@@ -24,6 +24,8 @@ git clone https://github.com/gincarbone/roy
 
 pip3 install -r requirements.txt
 
+sudo apt-get install python3-tk
+
 ## Screens
 <img align="center" width="600" height="300" src="http://www.marcelloincarbone.it/wp-content/uploads/2017/09/Console1.jpg">
 Console 
