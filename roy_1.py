@@ -35,7 +35,7 @@ class RoyTrader():
 	
 	client = Client(api_key, api_secret)
 	user = client.get_current_user()
-	account = client.get_accounts()
+	account = client.get_accounts() 
 	#tbuys = client.get_buys()
 	buys = []
 	sells = []
